@@ -6,9 +6,7 @@ import '../widgets/custom_text_field.dart';
 import '../widgets/primary_button.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({
-    super.key,
-  });
+  const LoginPage({super.key});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -16,9 +14,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController usuarioController = TextEditingController();
-
   final TextEditingController passwordController = TextEditingController();
-
   final AuthService authService = AuthService();
 
   bool ocultarPassword = true;
@@ -28,7 +24,6 @@ class _LoginPageState extends State<LoginPage> {
   void dispose() {
     usuarioController.dispose();
     passwordController.dispose();
-
     super.dispose();
   }
 
@@ -39,15 +34,12 @@ class _LoginPageState extends State<LoginPage> {
     );
 
     if (mensaje != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(mensaje)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(mensaje)));
       return;
     }
 
-    setState(() {
-      cargando = true;
-    });
+    setState(() => cargando = true);
 
     try {
       final usuario = await authService.autenticar(
@@ -57,45 +49,33 @@ class _LoginPageState extends State<LoginPage> {
 
       if (!mounted) return;
 
-      final int tipoUsuario = (usuario['tip_usu'] as num).toInt();
+      final String tipoUsuario =
+          usuario['tip_usu']?.toString().toLowerCase() ?? '2';
 
-      if (tipoUsuario == 1) {
+      final bool esAdmin = tipoUsuario == '1' || tipoUsuario == 'admin';
+
+      if (esAdmin) {
         Navigator.pushNamedAndRemoveUntil(
           context,
           '/users',
           (route) => false,
           arguments: usuario,
         );
-      } else if (tipoUsuario == 2) {
+      } else {
         Navigator.pushNamedAndRemoveUntil(
           context,
           '/blog',
           (route) => false,
           arguments: usuario,
         );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('El tipo de usuario no tiene acceso asignado'),
-          ),
-        );
       }
     } catch (e) {
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            e.toString().replaceFirst('Exception: ', ''),
-          ),
-        ),
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
       );
     } finally {
-      if (mounted) {
-        setState(() {
-          cargando = false;
-        });
-      }
+      if (mounted) setState(() => cargando = false);
     }
   }
 
@@ -103,99 +83,144 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: AuthBackground(
-        child: Center(
-          child: AuthCard(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.lock,
-                  size: 65,
-                  color: Color(0xFFC9A227),
-                ),
-                const SizedBox(
-                  height: 15,
-                ),
-                const Text(
-                  'INICIAR SESIÓN',
-                  style: TextStyle(
-                    fontSize: 27,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF08245C),
-                  ),
-                ),
-                const SizedBox(
-                  height: 25,
-                ),
-                CustomTextField(
-                  controller: usuarioController,
-                  label: 'correo electronico',
-                  prefixIcon: Icons.person,
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(
-                  height: 15,
-                ),
-                CustomTextField(
-                  controller: passwordController,
-                  label: 'Contraseña',
-                  prefixIcon: Icons.lock_outline,
-                  obscureText: ocultarPassword,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      ocultarPassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.8), width: 2),
                     ),
-                    onPressed: () {
-                      setState(() {
-                        ocultarPassword = !ocultarPassword;
-                      });
-                    },
+                    child: const Icon(Icons.sports_esports,
+                        size: 50, color: Color(0xFF1A365D)),
                   ),
-                ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {},
-                    child: const Text(
-                      '¿Olvidaste tu contraseña?',
+                  const SizedBox(height: 15),
+                  RichText(
+                    text: const TextSpan(
+                      style: TextStyle(
+                          fontSize: 38,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.5),
+                      children: [
+                        TextSpan(
+                            text: 'Game',
+                            style: TextStyle(color: Color(0xFF1A365D))),
+                        TextSpan(
+                            text: 'D',
+                            style: TextStyle(color: Color(0xFFE53935))),
+                        TextSpan(
+                            text: 'A',
+                            style: TextStyle(color: Color(0xFF1E88E5))),
+                        TextSpan(
+                            text: 'P',
+                            style: TextStyle(color: Color(0xFFFFB74D))),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(
-                  height: 5,
-                ),
-                PrimaryButton(
-                    text: cargando ? 'Validando..' : 'Ingresar',
-                    onPressed: cargando
-                        ? () {}
-                        : () {
-                            iniciarSesion();
-                          }),
-                const SizedBox(
-                  height: 15,
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      '¿No tienes cuenta?',
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tu siguiente partida empieza aquí',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF1A365D).withValues(alpha: 0.8)),
+                  ),
+                  const SizedBox(height: 30),
+                  AuthCard(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.5)),
+                          ),
+                          child: const Text('INICIAR SESIÓN',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1A365D))),
+                        ),
+                        const SizedBox(height: 20),
+                        CustomTextField(
+                          controller: usuarioController,
+                          label: 'Correo electrónico',
+                          hintText: 'nombre@correo.com',
+                          prefixIcon: Icons.email_outlined,
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: 15),
+                        CustomTextField(
+                          controller: passwordController,
+                          label: 'Contraseña',
+                          hintText: '********',
+                          prefixIcon: Icons.lock_outline,
+                          obscureText: ocultarPassword,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                                ocultarPassword
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                color: const Color(0xFF1A365D)
+                                    .withValues(alpha: 0.6)),
+                            onPressed: () => setState(
+                                () => ocultarPassword = !ocultarPassword),
+                          ),
+                        ),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () =>
+                                Navigator.pushNamed(context, '/recovery'),
+                            child: Text('¿Olvidaste tu contraseña?',
+                                style: TextStyle(
+                                    color: const Color(0xFF1A365D)
+                                        .withValues(alpha: 0.7),
+                                    fontSize: 13)),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        PrimaryButton(
+                          text: cargando ? 'Validando...' : 'Iniciar sesión',
+                          onPressed: cargando ? () {} : iniciarSesion,
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('¿Aún no tienes cuenta?',
+                                style: TextStyle(
+                                    color: const Color(0xFF1A365D)
+                                        .withValues(alpha: 0.7),
+                                    fontSize: 14)),
+                            TextButton(
+                              onPressed: () =>
+                                  Navigator.pushNamed(context, '/register'),
+                              child: const Text('Crear una cuenta',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1A365D))),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushNamed(
-                          context,
-                          '/register',
-                        );
-                      },
-                      child: const Text(
-                        'Registrarse',
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 class AuthCard extends StatelessWidget {
-
   final Widget child;
 
   const AuthCard({
@@ -11,25 +10,27 @@ class AuthCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-    return Card(
-
-      elevation: 10,
-
-      shape:
-          RoundedRectangleBorder(
-        borderRadius:
-            BorderRadius.circular(14),
-      ),
-
-      child: Padding(
-        padding:
-            const EdgeInsets.all(24),
-
-        child: SizedBox(
-          width: 340,
-          child: child,
+    return Container(
+      width: 340,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.8),
+          width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withValues(alpha: 0.1),
+            blurRadius: 20,
+            spreadRadius: 5,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: child,
       ),
     );
   }

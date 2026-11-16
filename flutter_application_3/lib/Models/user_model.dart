@@ -4,7 +4,9 @@ class UserModel {
   final String correo;
   final String? password;
   final String? direccion;
-  final int tipoUsuario;
+
+  // --- CAMBIO: Ahora es String en lugar de int ---
+  final String tipoUsuario;
 
   UserModel({
     required this.id,
@@ -12,7 +14,7 @@ class UserModel {
     required this.correo,
     this.password,
     this.direccion,
-    this.tipoUsuario = 1,
+    this.tipoUsuario = '1', // --- CAMBIO: Valor por defecto en String ---
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -21,17 +23,17 @@ class UserModel {
       nombre: json['nom_usr'] as String,
       correo: json['mail'] as String,
       direccion: json['dir_usr'] as String?,
-      tipoUsuario: json['tip_usr'] as int? ?? 1,
+      tipoUsuario: json['tip_usu']?.toString() ?? '1',
     );
   }
 
   Map<String, dynamic> toJsonCrear() {
-  return {
-    'nom_usr': nombre,
-    'mail': correo,
-    'password': password,
-    'dir_usr': direccion,
-    'tip_usu': tipoUsuario,
-  };
-}
+    return {
+      'nom_usr': nombre,
+      'mail': correo,
+      'password': password,
+      'dir_usr': direccion,
+      'tip_usu': tipoUsuario,
+    };
+  }
 }

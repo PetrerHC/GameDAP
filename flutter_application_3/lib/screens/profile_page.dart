@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import '../Models/user_model.dart';
 import '../services/user_service.dart';
 import '../widgets/admin_drawer.dart';
+import '../widgets/auth_background.dart';
+import '../widgets/auth_card.dart';
+import '../widgets/custom_text_field.dart';
+import '../widgets/primary_button.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -62,8 +66,8 @@ class _ProfilePageState extends State<ProfilePage> {
     final nombre = nombreController.text.trim();
     final correo = correoController.text.trim();
     final direccion = direccionController.text.trim();
-    final tipo = usuarioActual['tip_usu'];
-    final tipoUsuario = tipo is num ? tipo.toInt() : 2;
+
+    final String tipoUsuario = usuarioActual['tip_usu']?.toString() ?? '2';
 
     if (nombre.length < 2 || !correo.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -82,7 +86,7 @@ class _ProfilePageState extends State<ProfilePage> {
         nombre: nombre,
         correo: correo,
         direccion: direccion.isEmpty ? null : direccion,
-        tipoUsuario: tipoUsuario,
+        tipoUsuario: tipoUsuario, 
       );
 
       final respuesta = await userService.actualizarUsuario(actualizado);
@@ -100,7 +104,10 @@ class _ProfilePageState extends State<ProfilePage> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Perfil actualizado correctamente')),
+        const SnackBar(
+          content: Text('Perfil actualizado correctamente'),
+          backgroundColor: Color(0xFF7CB342),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
@@ -116,46 +123,99 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mi perfil')),
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: const Color(0xFF1A365D),
+        title: const Text(
+          'Mi perfil',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
       drawer: usuarioActual.isEmpty
           ? null
           : AdminDrawer(
               usuario: usuarioActual,
               rutaActual: '/profile',
             ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          TextField(
-            controller: nombreController,
-            decoration: const InputDecoration(
-              labelText: 'Nombre completo',
-              border: OutlineInputBorder(),
+      body: AuthBackground(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            child: Center(
+              child: AuthCard(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.blue.withValues(alpha: 0.1),
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.account_circle,
+                        size: 60,
+                        color: Color(0xFF1A365D),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    const Text(
+                      'DATOS DEL PERFIL',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF1A365D),
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    CustomTextField(
+                      controller: nombreController,
+                      label: 'Nombre completo',
+                      hintText: 'Tu nombre',
+                      prefixIcon: Icons.person_outline,
+                    ),
+                    const SizedBox(height: 15),
+                    CustomTextField(
+                      controller: correoController,
+                      label: 'Correo electrónico',
+                      hintText: 'correo@ejemplo.com',
+                      prefixIcon: Icons.email_outlined,
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    const SizedBox(height: 15),
+                    CustomTextField(
+                      controller: direccionController,
+                      label: 'Dirección',
+                      hintText: 'Tu dirección (Opcional)',
+                      prefixIcon: Icons.home_outlined,
+                    ),
+                    const SizedBox(height: 25),
+                    PrimaryButton(
+                      text: guardando ? 'Actualizando...' : 'Guardar cambios',
+                      onPressed: guardando ? () {} : actualizarPerfil,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: correoController,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              labelText: 'Correo electrónico',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: direccionController,
-            decoration: const InputDecoration(
-              labelText: 'Dirección',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 22),
-          FilledButton(
-            onPressed: guardando ? null : actualizarPerfil,
-            child: Text(guardando ? 'Actualizando...' : 'Guardar cambios'),
-          ),
-        ],
+        ),
       ),
     );
   }

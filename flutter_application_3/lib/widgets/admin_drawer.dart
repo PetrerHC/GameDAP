@@ -3,133 +3,191 @@ import 'package:flutter/material.dart';
 class AdminDrawer extends StatelessWidget {
   final Map<String, dynamic> usuario;
   final String rutaActual;
-  final VoidCallback? onPostCreated;
 
   const AdminDrawer({
     super.key,
     required this.usuario,
     required this.rutaActual,
-    this.onPostCreated,
   });
 
-  Future<void> _navegar(BuildContext context, String ruta) async {
-    final navigator = Navigator.of(context);
-    navigator.pop();
+  String get nombre => usuario['nom_usr']?.toString() ?? 'Administrador';
+  String get correo => usuario['mail']?.toString() ?? '';
 
+  void _navegar(BuildContext context, String ruta) {
+    Navigator.pop(context);
     if (ruta == rutaActual) return;
-
-    if (ruta == '/logout') {
-      navigator.pushNamedAndRemoveUntil('/login', (route) => false);
-      return;
-    }
-
-    final resultado = await navigator.pushNamed<Object?>(
+    Navigator.pushReplacementNamed(
+      context,
       ruta,
       arguments: usuario,
     );
-    if (resultado == true) onPostCreated?.call();
   }
 
   @override
   Widget build(BuildContext context) {
-    final nombre = usuario['nom_usr']?.toString() ?? 'Administrador';
-
+    // Container para darle el fondo degradado al Drawer
     return Drawer(
-      width: 304,
-      backgroundColor: const Color(0xFFF7F1FA),
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            DrawerHeader(
-              margin: EdgeInsets.zero,
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
-              decoration: const BoxDecoration(color: Color(0xFF102D65)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const CircleAvatar(
-                    radius: 36,
-                    backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.admin_panel_settings,
-                      color: Color(0xFF102D65),
-                      size: 34,
+      backgroundColor: Colors.transparent,
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFC9F2F9),
+              Color(0xFFA8E0D8),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color:
+                      Colors.white.withValues(alpha: 0.4), // Fondo de cristal
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      width: 1.5,
                     ),
                   ),
-                  const Spacer(),
-                  Text(
-                    nombre,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.blue.withValues(alpha: 0.2),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: const CircleAvatar(
+                        radius: 35,
+                        backgroundColor: Color(0xFF1A365D),
+                        child: Icon(
+                          Icons.admin_panel_settings,
+                          color: Colors.white,
+                          size: 40,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 15),
+                    // Nombre
+                    Text(
+                      nombre,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A365D),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 5),
+                    // Correo
+                    Text(
+                      correo,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: const Color(0xFF1A365D).withValues(alpha: 0.7),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
-            ),
-            _opcion(
-              context,
-              icono: Icons.people_outline,
-              texto: 'Gestión de usuarios',
-              ruta: '/users',
-            ),
-            _opcion(
-              context,
-              icono: Icons.person_add_alt_1_outlined,
-              texto: 'Registrar usuario',
-              ruta: '/register',
-            ),
-            _opcion(
-              context,
-              icono: Icons.post_add,
-              texto: 'Agregar blog',
-              ruta: '/add-blog',
-            ),
-            _opcion(
-              context,
-              icono: Icons.person_outline,
-              texto: 'Mi perfil',
-              ruta: '/profile',
-            ),
-            const Spacer(),
-            const Divider(height: 1),
-            _opcion(
-              context,
-              icono: Icons.logout,
-              texto: 'Cerrar sesión',
-              ruta: '/logout',
-            ),
-          ],
+
+              const SizedBox(height: 10),
+
+              // --- OPCIONES DEL MENÚ ---
+              _opcion(context, Icons.people_alt_outlined, 'Gestión de usuarios',
+                  '/users'),
+              _opcion(context, Icons.person_add_alt_1, 'Registrar usuario',
+                  '/register'),
+              _opcion(context, Icons.post_add, 'Agregar blog', '/add-blog'),
+              _opcion(context, Icons.account_circle_outlined, 'Mi perfil',
+                  '/profile'),
+
+              const Spacer(),
+              const Divider(color: Colors.white54),
+
+              ListTile(
+                leading: const Icon(Icons.logout, color: Color(0xFFE53935)),
+                title: const Text(
+                  'Cerrar sesión',
+                  style: TextStyle(
+                    color: Color(0xFFE53935),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/login',
+                    (route) => false,
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );
   }
 
+  // Widget reutilizable para las opciones del menú
   Widget _opcion(
-    BuildContext context, {
-    required IconData icono,
-    required String texto,
-    required String ruta,
-  }) {
-    final esCerrarSesion = ruta == '/logout';
-    return ListTile(
-      leading: Icon(
-        icono,
-        color: esCerrarSesion
-            ? Colors.red
-            : ruta == rutaActual
-                ? const Color(0xFF102D65)
-                : null,
+    BuildContext context,
+    IconData icono,
+    String titulo,
+    String ruta,
+  ) {
+    final seleccionado = ruta == rutaActual;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Container(
+        decoration: BoxDecoration(
+          // Si está seleccionado, le damos un fondo de cristal
+          color: seleccionado
+              ? Colors.white.withValues(alpha: 0.6)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(15),
+          border: seleccionado
+              ? Border.all(color: Colors.white.withValues(alpha: 0.8), width: 1)
+              : null,
+        ),
+        child: ListTile(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          leading: Icon(
+            icono,
+            color: seleccionado
+                ? const Color(0xFF1A365D)
+                : const Color(0xFF1A365D).withValues(alpha: 0.6),
+          ),
+          title: Text(
+            titulo,
+            style: TextStyle(
+              color: const Color(0xFF1A365D),
+              fontWeight: seleccionado ? FontWeight.bold : FontWeight.w500,
+            ),
+          ),
+          selected: seleccionado,
+          onTap: () => _navegar(context, ruta),
+        ),
       ),
-      title: Text(
-        texto,
-        style: esCerrarSesion ? const TextStyle(color: Colors.red) : null,
-      ),
-      selected: ruta == rutaActual,
-      selectedColor: const Color(0xFF7655AD),
-      onTap: () => _navegar(context, ruta),
     );
   }
 }
