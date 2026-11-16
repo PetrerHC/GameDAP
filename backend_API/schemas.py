@@ -76,7 +76,7 @@ class BlogCrear(BaseModel):
     tags: str | None = Field(default=None, max_length=255)
     
 class LikeBlogRespuesta(BaseModel):
-    id_suario: int 
+    id_usuario: int 
     id_blog: int
     like: bool
     
