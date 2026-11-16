@@ -40,7 +40,6 @@ class PostCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // --- IMAGEN ---
                 if (post.imagen.isNotEmpty)
                   Image.network(
                     post.imagen,
@@ -60,8 +59,6 @@ class PostCard extends StatelessWidget {
                       );
                     },
                   ),
-
-                // --- TEXTO ---
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -100,7 +97,7 @@ class PostCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 15),
 
-                      // --- NUEVA SECCIÓN: LIKES Y COMENTARIOS (Visual) ---
+                      // La seccion de comentarios, likes, etc
                       const Divider(color: Colors.black12, height: 1),
                       const SizedBox(height: 10),
                       Row(
