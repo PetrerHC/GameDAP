@@ -111,7 +111,6 @@ class PostCard extends StatelessWidget {
                               const Icon(Icons.favorite_border,
                                   size: 20, color: Color(0xFF2196F3)),
                               const SizedBox(width: 5),
-                              // Nota: Asumo que tu modelo tiene esta variable, si se llama distinto, cámbialo aquí
                               Text(
                                 '${post.cantLikes ?? 0}',
                                 style: const TextStyle(
