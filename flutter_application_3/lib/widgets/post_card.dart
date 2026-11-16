@@ -124,7 +124,6 @@ class PostCard extends StatelessWidget {
                               const Icon(Icons.chat_bubble_outline,
                                   size: 18, color: Color(0xFF2196F3)),
                               const SizedBox(width: 5),
-                              // Nota: Asumo que tu modelo tiene esta variable
                               Text(
                                 '${post.cantComentarios ?? 0} comentarios',
                                 style: const TextStyle(
