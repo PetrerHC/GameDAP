@@ -2,6 +2,19 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <!-- Explica para qué se usan la cámara y las fotos. -->
+    <key>NSCameraUsageDescription</key>
+    <string>Usamos la cámara para añadir una foto a tu publicación.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Permite elegir una imagen para tu publicación.</string>
+    <!-- Permite usar el servidor de la red local. -->
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>GameDAP se conecta con la API de desarrollo en tu red local.</string>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+    </dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

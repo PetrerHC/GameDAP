@@ -5,7 +5,6 @@ class UserModel {
   final String? password;
   final String? direccion;
 
-  // --- CAMBIO: Ahora es String en lugar de int ---
   final String tipoUsuario;
 
   UserModel({
@@ -14,7 +13,7 @@ class UserModel {
     required this.correo,
     this.password,
     this.direccion,
-    this.tipoUsuario = '1', // --- CAMBIO: Valor por defecto en String ---
+    this.tipoUsuario = '1',
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -23,7 +22,7 @@ class UserModel {
       nombre: json['nom_usr'] as String,
       correo: json['mail'] as String,
       direccion: json['dir_usr'] as String?,
-      tipoUsuario: json['tip_usu']?.toString() ?? '1',
+      tipoUsuario: json['tip_usu']?.toString() ?? '2',
     );
   }
 
@@ -31,7 +30,8 @@ class UserModel {
     return {
       'nom_usr': nombre,
       'mail': correo,
-      'password': password,
+      // La API recibe la contraseña con el nombre pass.
+      'pass': password,
       'dir_usr': direccion,
       'tip_usu': tipoUsuario,
     };

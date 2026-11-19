@@ -26,8 +26,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final AuthService authService = AuthService();
   final UserService userService = UserService();
 
-  // --- CAMBIO: Ahora es String ---
-  String tipoUsuario = '2';
+  bool get esAdmin => AuthService.esAdmin;
   bool guardando = false;
 
   Map<String, dynamic> usuarioActual = {};
@@ -58,6 +57,7 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> registrarUsuario() async {
+    if (guardando) return;
     final nombre = nombreController.text.trim();
     final correo = correoController.text.trim();
     final password = passwordController.text;
@@ -87,10 +87,15 @@ class _RegisterPageState extends State<RegisterPage> {
         correo: correo,
         password: password,
         direccion: direccion.isEmpty ? null : direccion,
-        tipoUsuario: tipoUsuario,
+        tipoUsuario: esAdmin ? '1' : '2',
       );
 
-      await userService.agregarUsuario(usuario);
+      // El panel y el registro público usan servicios diferentes.
+      if (esAdmin) {
+        await userService.agregarUsuario(usuario);
+      } else {
+        await authService.registrar(usuario);
+      }
 
       if (!mounted) return;
 
@@ -107,13 +112,15 @@ class _RegisterPageState extends State<RegisterPage> {
       confirmarPasswordController.clear();
       direccionController.clear();
 
-      // --- CAMBIO: Volvemos a '2' como String ---
-      setState(() => tipoUsuario = '2');
+      if (!esAdmin) Navigator.pop(context);
     } catch (error) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo registrar: $error')),
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) setState(() => guardando = false);
@@ -134,7 +141,7 @@ class _RegisterPageState extends State<RegisterPage> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
-      drawer: usuarioActual.isEmpty
+      drawer: !esAdmin
           ? null
           : AdminDrawer(
               usuario: usuarioActual,
@@ -193,79 +200,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       prefixIcon: Icons.home_outlined,
                     ),
                     const SizedBox(height: 15),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(left: 4.0, bottom: 6.0),
-                          child: Text(
-                            'Tipo de usuario',
-                            style: TextStyle(
-                              color: Color(0xFF1A365D),
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                        // --- CAMBIO: Dropdown de String ---
-                        DropdownButtonFormField<String>(
-                          value: tipoUsuario,
-                          icon: const Icon(Icons.arrow_drop_down,
-                              color: Color(0xFF1A365D)),
-                          dropdownColor: const Color(0xFFE6F6FF),
-                          style: const TextStyle(
-                            color: Color(0xFF1A365D),
-                            fontSize: 16,
-                          ),
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: Colors.white.withValues(alpha: 0.6),
-                            prefixIcon: Icon(
-                              Icons.badge_outlined,
-                              color: const Color(0xFF1A365D)
-                                  .withValues(alpha: 0.7),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.8),
-                                width: 1.5,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF2196F3),
-                                width: 2.0,
-                              ),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 16.0,
-                              horizontal: 16.0,
-                            ),
-                          ),
-                          items: const [
-                            // --- CAMBIO: Valores String ---
-                            DropdownMenuItem(
-                              value: '1',
-                              child: Text('Administrador'),
-                            ),
-                            DropdownMenuItem(
-                              value: '2',
-                              child: Text('Usuario general'),
-                            ),
-                          ],
-                          onChanged: guardando
-                              ? null
-                              : (valor) {
-                                  if (valor != null) {
-                                    setState(() => tipoUsuario = valor);
-                                  }
-                                },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 15),
                     CustomTextField(
                       controller: passwordController,
                       label: 'Contraseña',
@@ -284,7 +218,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 25),
                     PrimaryButton(
                       text: guardando ? 'Registrando...' : 'Registrar usuario',
-                      onPressed: guardando ? () {} : registrarUsuario,
+                      onPressed: guardando ? null : registrarUsuario,
                     ),
                     const SizedBox(height: 10),
                   ],

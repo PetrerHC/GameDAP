@@ -4,11 +4,14 @@ import '../Models/post_model.dart';
 class PostCard extends StatelessWidget {
   final PostModel post;
   final VoidCallback onTap;
+  // Recibe la acción del corazón; si está vacío, el botón se desactiva.
+  final VoidCallback? onLike;
 
   const PostCard({
     super.key,
     required this.post,
     required this.onTap,
+    this.onLike,
   });
 
   @override
@@ -75,7 +78,6 @@ class PostCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                       ],
-
                       Text(
                         post.titulo,
                         style: const TextStyle(
@@ -85,7 +87,6 @@ class PostCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-
                       Text(
                         post.descripcion,
                         maxLines: 3,
@@ -96,20 +97,34 @@ class PostCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 15),
-
-                      // La seccion de comentarios, likes, etc
                       const Divider(color: Colors.black12, height: 1),
                       const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      // Si falta espacio, los contadores pasan a otra línea.
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 16,
                         children: [
                           Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.favorite_border,
-                                  size: 20, color: Color(0xFF2196F3)),
+                              IconButton(
+                                tooltip:
+                                    post.meGusta ? 'Quitar like' : 'Dar like',
+                                onPressed: onLike,
+                                icon: Icon(
+                                  post.meGusta
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  size: 22,
+                                  color: post.meGusta
+                                      ? Colors.red
+                                      : const Color(0xFF2196F3),
+                                ),
+                              ),
                               const SizedBox(width: 5),
                               Text(
-                                '${post.cantLikes ?? 0}',
+                                '${post.cantLikes}',
                                 style: const TextStyle(
                                     color: Color(0xFF1A365D),
                                     fontWeight: FontWeight.w600),
@@ -117,12 +132,13 @@ class PostCard extends StatelessWidget {
                             ],
                           ),
                           Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               const Icon(Icons.chat_bubble_outline,
                                   size: 18, color: Color(0xFF2196F3)),
                               const SizedBox(width: 5),
                               Text(
-                                '${post.cantComentarios ?? 0} comentarios',
+                                '${post.cantComentarios} comentarios',
                                 style: const TextStyle(
                                     color: Color(0xFF1A365D),
                                     fontWeight: FontWeight.w600),

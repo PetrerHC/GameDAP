@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
+// Permite cerrar la sesión desde el menú.
+import '../services/auth_service.dart';
 
 class BlogDrawer extends StatelessWidget {
   final Map<String, dynamic> usuario;
-  final bool esAdmin; // <-- CAMBIO: Ahora recibe un booleano
+  final bool esAdmin;
   final String rutaActual;
 
   const BlogDrawer({
     super.key,
     required this.usuario,
-    required this.esAdmin, // <-- CAMBIO
+    required this.esAdmin,
     required this.rutaActual,
   });
 
   @override
   Widget build(BuildContext context) {
-    final nombre = usuario['nom_usr']?.toString() ?? 'Usuario';
+    final nombre = usuario['nom_usr']?.toString() ?? 'Visitante';
     final correo = usuario['mail']?.toString() ?? '';
 
     return Drawer(
@@ -72,7 +74,7 @@ class BlogDrawer extends StatelessWidget {
               _opcion(context, Icons.home, 'Inicio (Blog)', '/blog'),
 
               // Solo se muestra si es Administrador
-              if (esAdmin) // <-- CAMBIO
+              if (esAdmin)
                 _opcion(context, Icons.people_alt_outlined,
                     'Gestión de usuarios', '/users'),
 
@@ -81,11 +83,15 @@ class BlogDrawer extends StatelessWidget {
 
               ListTile(
                 leading: const Icon(Icons.logout, color: Color(0xFFE53935)),
-                title: const Text('Cerrar sesión',
-                    style: TextStyle(
+                title: Text(
+                    usuario.isEmpty ? 'Iniciar sesión' : 'Cerrar sesión',
+                    style: const TextStyle(
                         color: Color(0xFFE53935), fontWeight: FontWeight.w600)),
-                onTap: () => Navigator.pushNamedAndRemoveUntil(
-                    context, '/login', (route) => false),
+                onTap: () {
+                  AuthService.cerrarSesion();
+                  Navigator.pushNamedAndRemoveUntil(
+                      context, '/login', (route) => false);
+                },
               ),
               const SizedBox(height: 8),
             ],
@@ -122,7 +128,12 @@ class BlogDrawer extends StatelessWidget {
                   color: const Color(0xFF1A365D),
                   fontWeight:
                       seleccionado ? FontWeight.bold : FontWeight.w500)),
-          onTap: () {}, // Lógica de navegación pendiente
+          onTap: () {
+            // Cierra el menú antes de abrir la pantalla elegida.
+            Navigator.pop(context);
+            if (ruta == rutaActual) return;
+            Navigator.pushReplacementNamed(context, ruta, arguments: usuario);
+          },
         ),
       ),
     );

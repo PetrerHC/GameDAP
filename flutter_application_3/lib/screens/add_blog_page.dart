@@ -4,6 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../services/post_service.dart';
+// Permite saber qué menú mostrar al usuario.
+import '../services/auth_service.dart';
+// Muestra el menú para los usuarios generales.
+import '../widgets/blog_drawer.dart';
 import '../widgets/admin_drawer.dart';
 import '../widgets/auth_background.dart';
 import '../widgets/auth_card.dart';
@@ -62,15 +66,28 @@ class _AddBlogPageState extends State<AddBlogPage> {
   }
 
   Future<void> guardarPublicacion() async {
+    if (guardando) return;
     if (tituloController.text.trim().length < 2 ||
+        tituloController.text.trim().length > 150 ||
+        tagsController.text.trim().length > 255 ||
         descripcionController.text.trim().isEmpty ||
         foto == null ||
         imagenBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Completa el título, la descripción y toma una foto.'),
+          content: Text(
+              'Completa el título (2 a 150 caracteres), la descripción, las etiquetas (máximo 255) y toma una foto.'),
         ),
       );
+      return;
+    }
+
+    // Revisa que la foto no supere los 8 MB que acepta la API.
+    if (imagenBytes!.length > 8 * 1024 * 1024) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('La imagen no debe superar 8 MB'),
+        backgroundColor: Colors.red,
+      ));
       return;
     }
 
@@ -101,6 +118,7 @@ class _AddBlogPageState extends State<AddBlogPage> {
             'No se pudo guardar: '
             '${error.toString().replaceFirst('Exception: ', '')}',
           ),
+          backgroundColor: Colors.red,
         ),
       );
     } finally {
@@ -115,6 +133,17 @@ class _AddBlogPageState extends State<AddBlogPage> {
         ? Map<String, dynamic>.from(argumentos)
         : <String, dynamic>{};
 
+    // Elige el menú según el tipo de cuenta.
+    Widget? menu;
+    if (usuario.isNotEmpty) {
+      if (AuthService.esAdmin) {
+        menu = AdminDrawer(usuario: usuario, rutaActual: '/add-blog');
+      } else {
+        menu = BlogDrawer(
+            usuario: usuario, esAdmin: false, rutaActual: '/add-blog');
+      }
+    }
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
@@ -127,12 +156,7 @@ class _AddBlogPageState extends State<AddBlogPage> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
-      drawer: usuario.isEmpty
-          ? null
-          : AdminDrawer(
-              usuario: usuario,
-              rutaActual: '/add-blog',
-            ),
+      drawer: menu,
       body: AuthBackground(
         child: SafeArea(
           child: SingleChildScrollView(
@@ -285,7 +309,7 @@ class _AddBlogPageState extends State<AddBlogPage> {
 
                     PrimaryButton(
                       text: guardando ? 'Guardando...' : 'Guardar publicación',
-                      onPressed: guardando ? () {} : guardarPublicacion,
+                      onPressed: guardando ? null : guardarPublicacion,
                     ),
                   ],
                 ),

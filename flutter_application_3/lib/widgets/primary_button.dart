@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 class PrimaryButton extends StatelessWidget {
   final String text;
-  final VoidCallback onPressed;
+  // Un valor null desactiva el botón mientras se guarda o se carga.
+  final VoidCallback? onPressed;
 
   const PrimaryButton({
     super.key,

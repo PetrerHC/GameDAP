@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+// Permite borrar los datos de la cuenta al cerrar sesión.
+import '../services/auth_service.dart';
 
 class AdminDrawer extends StatelessWidget {
   final Map<String, dynamic> usuario;
@@ -109,6 +111,7 @@ class AdminDrawer extends StatelessWidget {
               const SizedBox(height: 10),
 
               // --- OPCIONES DEL MENÚ ---
+              _opcion(context, Icons.home_outlined, 'Inicio (Blog)', '/blog'),
               _opcion(context, Icons.people_alt_outlined, 'Gestión de usuarios',
                   '/users'),
               _opcion(context, Icons.person_add_alt_1, 'Registrar usuario',
@@ -130,6 +133,7 @@ class AdminDrawer extends StatelessWidget {
                   ),
                 ),
                 onTap: () {
+                  AuthService.cerrarSesion();
                   Navigator.pushNamedAndRemoveUntil(
                     context,
                     '/login',

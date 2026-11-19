@@ -58,13 +58,14 @@ class _UsersPageState extends State<UsersPage> {
     });
   }
 
-  void mostrarMensaje(String mensaje) {
+  // Usa rojo para los errores y verde cuando la acción terminó bien.
+  void mostrarMensaje(String mensaje, {bool esError = false}) {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(mensaje),
-        backgroundColor: const Color(0xFF7CB342), // Verde GameDAP
+        content: Text(mensaje.replaceFirst('Exception: ', '')),
+        backgroundColor: esError ? Colors.red : const Color(0xFF7CB342),
       ),
     );
   }
@@ -212,8 +213,7 @@ class _UsersPageState extends State<UsersPage> {
                                 correo: correo,
                                 password: password,
                                 direccion: direccion.isEmpty ? null : direccion,
-                                tipoUsuario:
-                                    '1', // --- CAMBIO: Enviamos '1' como String (Admin por defecto) ---
+                                tipoUsuario: '1',
                               );
 
                               await userService.agregarUsuario(nuevo);
@@ -226,7 +226,12 @@ class _UsersPageState extends State<UsersPage> {
                             if (!dialogContext.mounted) return;
 
                             ScaffoldMessenger.of(dialogContext).showSnackBar(
-                              SnackBar(content: Text('No se pudo guardar: $e')),
+                              SnackBar(
+                                content: Text(e
+                                    .toString()
+                                    .replaceFirst('Exception: ', '')),
+                                backgroundColor: Colors.red,
+                              ),
                             );
 
                             actualizarDialogo(() {
@@ -306,7 +311,7 @@ class _UsersPageState extends State<UsersPage> {
       recargarUsuarios();
       mostrarMensaje('Usuario eliminado correctamente');
     } catch (e) {
-      mostrarMensaje('No se pudo eliminar: $e');
+      mostrarMensaje(e.toString(), esError: true);
     }
   }
 

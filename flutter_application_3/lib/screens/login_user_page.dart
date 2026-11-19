@@ -28,6 +28,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> iniciarSesion() async {
+    if (cargando) return;
     final mensaje = authService.validarLogin(
       usuario: usuarioController.text,
       password: passwordController.text,
@@ -72,11 +73,39 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) setState(() => cargando = false);
     }
+  }
+
+  // Lleva el correo al formulario de la nueva contraseña.
+  Future<void> recuperarPassword() async {
+    final correo = usuarioController.text.trim();
+    if (!correo.contains('@') || correo.contains(' ')) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Escribe tu correo arriba para identificar tu cuenta'),
+        backgroundColor: Colors.red,
+      ));
+      return;
+    }
+    final actualizado = await Navigator.pushNamed(
+      context,
+      '/recovery',
+      arguments: correo,
+    );
+    // Muestra el aviso solo si se guardó la contraseña y seguimos aquí.
+    if (!mounted || actualizado != true) return;
+    passwordController.clear();
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Contraseña actualizada. Ya puedes iniciar sesión'),
+      backgroundColor: Color(0xFF7CB342),
+    ));
   }
 
   @override
@@ -147,7 +176,7 @@ class _LoginPageState extends State<LoginPage> {
                             border: Border.all(
                                 color: Colors.white.withValues(alpha: 0.5)),
                           ),
-                          child: const Text('INICIAR SESIÓN',
+                          child: const Text('INICIO DE SESIÓN',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                   fontSize: 16,
@@ -183,8 +212,7 @@ class _LoginPageState extends State<LoginPage> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: () =>
-                                Navigator.pushNamed(context, '/recovery'),
+                            onPressed: cargando ? null : recuperarPassword,
                             child: Text('¿Olvidaste tu contraseña?',
                                 style: TextStyle(
                                     color: const Color(0xFF1A365D)
@@ -195,11 +223,12 @@ class _LoginPageState extends State<LoginPage> {
                         const SizedBox(height: 10),
                         PrimaryButton(
                           text: cargando ? 'Validando...' : 'Iniciar sesión',
-                          onPressed: cargando ? () {} : iniciarSesion,
+                          onPressed: cargando ? null : iniciarSesion,
                         ),
                         const SizedBox(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Text('¿Aún no tienes cuenta?',
                                 style: TextStyle(
@@ -215,6 +244,20 @@ class _LoginPageState extends State<LoginPage> {
                                       color: Color(0xFF1A365D))),
                             ),
                           ],
+                        ),
+                        TextButton(
+                          onPressed: cargando
+                              ? null
+                              : () {
+                                  // Abre el blog sin una cuenta guardada.
+                                  AuthService.continuarComoVisitante();
+                                  Navigator.pushNamedAndRemoveUntil(
+                                    context,
+                                    '/blog',
+                                    (route) => false,
+                                  );
+                                },
+                          child: const Text('Continuar como visitante'),
                         ),
                       ],
                     ),

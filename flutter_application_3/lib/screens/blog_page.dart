@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../Models/post_model.dart';
+// Permite saber quién está usando la app.
+import '../services/auth_service.dart';
 import '../services/post_service.dart';
 import '../widgets/blog_drawer.dart';
 import '../widgets/category_chip.dart';
@@ -15,15 +17,13 @@ class BlogPage extends StatefulWidget {
 }
 
 class _BlogPageState extends State<BlogPage> {
-  final PostService postService = PostService();
+  final postService = PostService();
+  // Guarda la consulta mientras la API devuelve las publicaciones.
   late Future<List<PostModel>> futurePosts;
-  String nombreUsuario = 'Usuario';
-  Map<String, dynamic> usuarioActual = {
-    'nom_usr': 'Usuario',
-    'mail': '',
-    'tip_usu': '2'
-  }; // Ahora '2' es String
-  bool argumentoLeido = false;
+  // Guarda los IDs que están esperando respuesta para no repetir el like.
+  final List<int> likesPendientes = [];
+  // Indica cuál de los filtros está seleccionado.
+  String categoria = 'Todos';
 
   @override
   void initState() {
@@ -31,147 +31,192 @@ class _BlogPageState extends State<BlogPage> {
     futurePosts = postService.obtenerPosts();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (argumentoLeido) return;
-
-    final argumento = ModalRoute.of(context)?.settings.arguments;
-    if (argumento is Map<String, dynamic>) {
-      usuarioActual = Map<String, dynamic>.from(argumento);
-      nombreUsuario = usuarioActual['nom_usr']?.toString() ?? 'Usuario';
-    } else if (argumento is String && argumento.isNotEmpty) {
-      nombreUsuario = argumento;
-      usuarioActual = {'nom_usr': nombreUsuario, 'mail': '', 'tip_usu': '2'};
-    }
-    argumentoLeido = true;
-  }
-
-  // --- CAMBIO: Evaluamos el String de la BD ---
-  bool get esAdmin {
-    final tipo = usuarioActual['tip_usu']?.toString().toLowerCase() ?? '2';
-    return tipo == '1' || tipo == 'admin';
-  }
-
   void recargarPosts() {
-    setState(() => futurePosts = postService.obtenerPosts());
+    setState(() {
+      futurePosts = postService.obtenerPosts(tag: categoria);
+    });
+  }
+
+  // Cambia la categoría y vuelve a consultar las publicaciones.
+  void filtrar(String seleccion) {
+    if (seleccion == categoria) return;
+    setState(() {
+      categoria = seleccion;
+      futurePosts = postService.obtenerPosts(tag: categoria);
+    });
+  }
+
+  Future<void> cambiarLike(PostModel post) async {
+    final usuarioId = AuthService.usuarioActual?['id_usr'] as int?;
+    if (usuarioId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Inicia sesión para dar like'),
+        backgroundColor: Colors.red,
+      ));
+      return;
+    }
+    if (likesPendientes.contains(post.id)) return;
+    setState(() {
+      likesPendientes.add(post.id);
+    });
+    try {
+      await postService.cambiarLike(post, usuarioId);
+      if (mounted) recargarPosts();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(error.toString().replaceFirst('Exception: ', '')),
+        backgroundColor: Colors.red,
+      ));
+      recargarPosts();
+    } finally {
+      // Solo actualiza la pantalla si el usuario sigue en ella.
+      if (mounted) {
+        setState(() {
+          likesPendientes.remove(post.id);
+        });
+      }
+    }
+  }
+
+  Future<void> abrirDetalle(PostModel post) async {
+    await Navigator.push(
+        context,
+        MaterialPageRoute<void>(
+          builder: (context) => PostDetailPage(post: post),
+        ));
+    // Vuelve a consultar los contadores al regresar del detalle.
+    if (mounted) recargarPosts();
   }
 
   @override
   Widget build(BuildContext context) {
+    final usuario = AuthService.usuarioActual ?? <String, dynamic>{};
+    final nombre = usuario['nom_usr']?.toString() ?? 'visitante';
     return Scaffold(
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        elevation: 0,
         foregroundColor: const Color(0xFF1A365D),
-        title: const Text('GameDAP - Home',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('GameDAP - Home'),
         actions: [
           IconButton(
-              onPressed: recargarPosts,
-              icon: const Icon(Icons.refresh),
-              tooltip: 'Actualizar publicaciones'),
+            onPressed: recargarPosts,
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Actualizar publicaciones',
+          )
         ],
       ),
-      // --- CAMBIO: Pasamos 'esAdmin' al Drawer ---
       drawer: BlogDrawer(
-        usuario: usuarioActual,
-        esAdmin: esAdmin,
-        rutaActual: '/blog',
-      ),
+          usuario: usuario, esAdmin: AuthService.esAdmin, rutaActual: '/blog'),
+      floatingActionButton: usuario.isEmpty
+          ? null
+          : FloatingActionButton(
+              tooltip: 'Crear publicación',
+              onPressed: () async {
+                await Navigator.pushNamed(context, '/add-blog',
+                    arguments: usuario);
+                if (mounted) recargarPosts();
+              },
+              child: const Icon(Icons.add),
+            ),
       body: AuthBackground(
         child: SafeArea(
-          child: FutureBuilder<List<PostModel>>(
-            future: futurePosts,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                    child: CircularProgressIndicator(color: Color(0xFF1A365D)));
-              }
-              if (snapshot.hasError) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.cloud_off,
-                            size: 45, color: Color(0xFF1A365D)),
-                        const SizedBox(height: 12),
-                        const Text('No fue posible cargar el blog.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                                color: Color(0xFF1A365D),
-                                fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 12),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFA9E05A),
-                              foregroundColor: const Color(0xFF1A365D)),
-                          onPressed: recargarPosts,
-                          child: const Text('Reintentar'),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+                child: Text('Bienvenido, $nombre',
+                    style: const TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A365D),
+                    )),
+              ),
+              SizedBox(
+                height: 45,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  children: [
+                    for (final tag in ['Todos', 'Minecraft', 'Guías'])
+                      Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: CategoryChip(
+                          text: tag,
+                          selected: categoria == tag,
+                          onTap: () => filtrar(tag),
                         ),
-                      ],
-                    ),
-                  ),
-                );
-              }
-
-              final posts = snapshot.data ?? <PostModel>[];
-              if (posts.isEmpty) {
-                return const Center(
-                    child: Text('No hay publicaciones registradas.',
-                        style:
-                            TextStyle(color: Color(0xFF1A365D), fontSize: 16)));
-              }
-
-              return ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  Text('Bienvenido, $nombreUsuario',
-                      style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF1A365D))),
-                  const SizedBox(height: 5),
-                  Text('Descubre nuevas ideas',
-                      style: TextStyle(
-                          fontSize: 16,
-                          color: const Color(0xFF1A365D).withValues(alpha: 0.7),
-                          fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    height: 45,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: [
-                        CategoryChip(
-                            text: 'Todos', selected: true, onTap: () {}),
-                        const SizedBox(width: 10),
-                        CategoryChip(
-                            text: 'Minecraft', selected: false, onTap: () {}),
-                        const SizedBox(width: 10),
-                        CategoryChip(
-                            text: 'Guías', selected: false, onTap: () {}),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  ...posts.map((post) => PostCard(
-                        post: post,
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute<void>(
-                                  builder: (context) =>
-                                      PostDetailPage(post: post)));
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                // Muestra la espera, el error o la lista según la respuesta.
+                child: FutureBuilder<List<PostModel>>(
+                  future: futurePosts,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(
+                          child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(
+                              snapshot.error
+                                  .toString()
+                                  .replaceFirst('Exception: ', ''),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          ElevatedButton(
+                              onPressed: recargarPosts,
+                              child: const Text('Reintentar')),
+                        ],
+                      ));
+                    }
+                    final posts = snapshot.data ?? [];
+                    if (posts.isEmpty) {
+                      return const Center(
+                          child:
+                              Text('No hay publicaciones en esta categoría.'));
+                    }
+                    return RefreshIndicator(
+                      onRefresh: () async {
+                        recargarPosts();
+                        try {
+                          await futurePosts;
+                        } catch (_) {
+                          // El error ya se muestra arriba junto al botón Reintentar.
+                        }
+                      },
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+                        itemCount: posts.length,
+                        itemBuilder: (context, index) {
+                          final post = posts[index];
+                          return PostCard(
+                            post: post,
+                            onTap: () => abrirDetalle(post),
+                            onLike: likesPendientes.contains(post.id)
+                                ? null
+                                : () => cambiarLike(post),
+                          );
                         },
-                      )),
-                ],
-              );
-            },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       ),

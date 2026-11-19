@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../Models/user_model.dart';
 import '../services/user_service.dart';
+// Mantiene los datos del usuario actualizados en la app.
+import '../services/auth_service.dart';
 import '../widgets/admin_drawer.dart';
 import '../widgets/auth_background.dart';
 import '../widgets/auth_card.dart';
@@ -53,6 +55,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> actualizarPerfil() async {
+    if (guardando) return;
     final id = usuarioActual['id_usr'];
     final idUsuario = id is num ? id.toInt() : int.tryParse('$id');
 
@@ -86,7 +89,7 @@ class _ProfilePageState extends State<ProfilePage> {
         nombre: nombre,
         correo: correo,
         direccion: direccion.isEmpty ? null : direccion,
-        tipoUsuario: tipoUsuario, 
+        tipoUsuario: tipoUsuario,
       );
 
       final respuesta = await userService.actualizarUsuario(actualizado);
@@ -101,6 +104,8 @@ class _ProfilePageState extends State<ProfilePage> {
           'dir_usr': respuesta.direccion,
           'tip_usu': respuesta.tipoUsuario,
         };
+        // Guarda los cambios también para las otras pantallas.
+        AuthService.usuarioActual = usuarioActual;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -113,7 +118,10 @@ class _ProfilePageState extends State<ProfilePage> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo actualizar el perfil: $error')),
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) setState(() => guardando = false);
@@ -207,7 +215,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(height: 25),
                     PrimaryButton(
                       text: guardando ? 'Actualizando...' : 'Guardar cambios',
-                      onPressed: guardando ? () {} : actualizarPerfil,
+                      onPressed: guardando ? null : actualizarPerfil,
                     ),
                     const SizedBox(height: 10),
                   ],

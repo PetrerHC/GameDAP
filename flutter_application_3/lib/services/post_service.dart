@@ -1,12 +1,18 @@
-import 'dart:convert';
 import 'dart:typed_data';
-
 import 'package:http/http.dart' as http;
-
 import '../Models/post_model.dart';
+// Hace las llamadas al servidor desde un mismo lugar.
+import 'api_client.dart';
 
 class PostService {
-  static const String baseUrl = 'http://127.0.0.1:8000';
+  // Agrega el ID para consultar cuáles publicaciones le gustan al usuario.
+  Map<String, String> get parametrosUsuario {
+    Map<String, String> parametros = {};
+    if (ApiClient.usuarioId != null) {
+      parametros['id_usuario'] = ApiClient.usuarioId.toString();
+    }
+    return parametros;
+  }
 
   Future<PostModel> agregarPost({
     required String titulo,
@@ -15,65 +21,53 @@ class PostService {
     required String nombreArchivo,
     String? tags,
   }) async {
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse('$baseUrl/blog'),
-    );
-
-    request.headers['Accept'] = 'application/json';
-    request.fields['titulo'] = titulo.trim();
-    request.fields['descripcion'] = descripcion.trim();
-
-    if (tags != null && tags.trim().isNotEmpty) {
-      request.fields['tags'] = tags.trim();
-    }
-
-    request.files.add(
-      http.MultipartFile.fromBytes(
-        'imagen',
-        imagenBytes,
-        filename: nombreArchivo,
-      ),
-    );
-
-    final streamedResponse =
-        await request.send().timeout(const Duration(seconds: 20));
-    final respuesta = await http.Response.fromStream(streamedResponse);
-
-    final dynamic resultado =
-        respuesta.body.isNotEmpty ? jsonDecode(respuesta.body) : null;
-
-    if ((respuesta.statusCode == 200 || respuesta.statusCode == 201) &&
-        resultado is Map<String, dynamic>) {
-      return PostModel.fromJson(resultado);
-    }
-
-    if (resultado is Map && resultado['detail'] != null) {
-      throw Exception(resultado['detail'].toString());
-    }
-
-    throw Exception(
-      'No se pudo guardar la publicación (HTTP ${respuesta.statusCode})',
-    );
+    // Envía la foto como archivo junto con el texto de la publicación.
+    final solicitud = http.MultipartRequest('POST', ApiClient.url('/blogs'));
+    solicitud.fields.addAll({
+      'titulo': titulo.trim(),
+      'desc': descripcion.trim(),
+      'tags': tags?.trim() ?? '',
+    });
+    solicitud.files.add(http.MultipartFile.fromBytes(
+      'imagen',
+      imagenBytes,
+      filename: nombreArchivo,
+    ));
+    final datos = await ApiClient.subirImagen(solicitud);
+    return PostModel.fromJson(datos);
   }
 
-  Future<List<PostModel>> obtenerPosts() async {
-    final respuesta = await http.get(
-      Uri.parse('$baseUrl/blog'),
-    );
-
-    if (respuesta.statusCode != 200) {
-      throw Exception('Error al consultar publicaciones');
+  Future<List<PostModel>> obtenerPosts({String? tag}) async {
+    final parametros = parametrosUsuario;
+    if (tag != null && tag != 'Todos') {
+      parametros['tag'] = tag;
     }
+    final datos = await ApiClient.get('/blogs', parametros: parametros) as List;
+    List<PostModel> publicaciones = [];
+    for (final dato in datos) {
+      publicaciones.add(PostModel.fromJson(dato));
+    }
+    return publicaciones;
+  }
 
-    final List<dynamic> datos = jsonDecode(respuesta.body);
+  Future<PostModel> obtenerPost(int id) async {
+    final datos =
+        await ApiClient.get('/blogs/$id', parametros: parametrosUsuario);
+    return PostModel.fromJson(datos);
+  }
 
-    return datos
-        .map(
-          (json) => PostModel.fromJson(
-            json as Map<String, dynamic>,
-          ),
-        )
-        .toList();
+  Future<PostModel> cambiarLike(PostModel post, int usuarioId) async {
+    // Si ya tiene like, se quita; en caso contrario, se agrega.
+    if (post.meGusta) {
+      final datos = await ApiClient.delete('/blogs/${post.id}/likes',
+          parametros: {'id_usuario': '$usuarioId'});
+      return PostModel.fromJson(datos);
+    }
+    await ApiClient.post('/likeblog', {
+      'id_usuario': usuarioId,
+      'id_blog': post.id,
+      'like': true,
+    });
+    return obtenerPost(post.id);
   }
 }
